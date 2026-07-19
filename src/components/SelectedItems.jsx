@@ -1,5 +1,6 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import GoldImg from "../assets/Gold.webp";
+import Landmine from "../assets/Landmine.webp";
 
 const SelectedItems = ({
   items = [],
@@ -7,7 +8,24 @@ const SelectedItems = ({
   onEdit,
   duplicateItem,
   editingId,
+  crateDetails,
 }) => {
+  const [totalRTP, setTotalRTP] = useState("0.00");
+  const crateCost = crateDetails.price;
+  useEffect(() => {
+    // Expected value returned per crate opened:
+    // sum of (item price * item odds%) for every item
+    const expectedValue = items.reduce(
+      (sum, item) => sum + (item.price * item.odds) / 100,
+      0,
+    );
+
+    // RTP = expected value returned / cost to open, as a percentage
+    const rtp =
+      crateCost > 0 ? (expectedValue / crateCost) * 100 : expectedValue;
+
+    setTotalRTP(rtp.toFixed(2));
+  }, [items, crateCost, crateDetails]);
   console.log(items);
 
   const totalOdds = items.reduce((a, v) => a + v.odds, 0).toFixed(2);
@@ -16,9 +34,15 @@ const SelectedItems = ({
     <div className="mb-2 w-full">
       <div className="flex items-center justify-between pb-2">
         <h3 className="text-white select-none text-[14px]">Selected Items</h3>
-        <h3 className="text-white select-none text-[14px]">
-          Total Odds: {totalOdds}% /<span className="text-[#323763]">100%</span>
-        </h3>
+        <div className="flex flex-col">
+          <h3 className="text-white select-none text-[14px]">
+            Total Odds: {totalOdds}% /
+            <span className="text-[#323763]">100%</span>
+          </h3>
+          <h3 className="text-white select-none text-[14px]">
+            RTP {totalRTP}%
+          </h3>
+        </div>
       </div>
 
       <div className="grid gap-2 grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">

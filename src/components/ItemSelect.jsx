@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-
+import Landmine from "../assets/Landmine.webp";
 const COLOR_OPTIONS = [
   { name: "Gray", value: "#7f7f7f" },
   { name: "Dark Gray", value: "#555555" },
@@ -73,6 +73,10 @@ const ColorDropdown = ({ value, onChange }) => {
 const ItemSelect = ({ addItem, updateItem, editingItem, onCancelEdit }) => {
   const [item, setItem] = useState(emptyItem);
   const [imgError, setImgError] = useState(false);
+  // Holds an actual image asset (e.g. the bundled Landmine image) that should
+  // be used as the preview/payload image WITHOUT being written into the
+  // visible "Image URL" text input.
+  const [presetImg, setPresetImg] = useState(null);
 
   useEffect(() => {
     if (editingItem) {
@@ -85,6 +89,7 @@ const ItemSelect = ({ addItem, updateItem, editingItem, onCancelEdit }) => {
         name: editingItem.name || "",
       });
 
+      setPresetImg(null);
       setImgError(false);
     }
   }, [editingItem]);
@@ -92,6 +97,8 @@ const ItemSelect = ({ addItem, updateItem, editingItem, onCancelEdit }) => {
   const handleChange = (field) => (e) => {
     if (field === "img") {
       setImgError(false);
+      // Manually editing the URL field overrides any preset image.
+      setPresetImg(null);
     }
 
     setItem((prev) => ({
@@ -102,6 +109,7 @@ const ItemSelect = ({ addItem, updateItem, editingItem, onCancelEdit }) => {
 
   const resetForm = () => {
     setItem(emptyItem);
+    setPresetImg(null);
     setImgError(false);
   };
 
@@ -110,6 +118,7 @@ const ItemSelect = ({ addItem, updateItem, editingItem, onCancelEdit }) => {
 
     const payload = {
       ...item,
+      img: presetImg || item.img,
       price: parseFloat(item.price) || 0,
       odds: parseFloat(item.odds) || 0,
     };
@@ -131,8 +140,28 @@ const ItemSelect = ({ addItem, updateItem, editingItem, onCancelEdit }) => {
     onCancelEdit?.();
   };
 
+  const prefillLandmine = () => {
+    setItem((prev) => ({
+      ...prev,
+      img: "",
+      gradient: "",
+      price: "0",
+      color: "#555555",
+      name: "Landmine",
+    }));
+    setPresetImg(Landmine);
+    setImgError(false);
+  };
+
+  useEffect(() => {
+    if (presetImg && item.name !== "Landmine") {
+      setPresetImg(null);
+    }
+  }, [item.name, presetImg]);
+
   const previewPrice = parseFloat(item.price) || 0;
   const previewOdds = parseFloat(item.odds) || 0;
+  const previewImgSrc = presetImg || item.img;
   const isEditing = Boolean(editingItem);
 
   return (
@@ -140,6 +169,14 @@ const ItemSelect = ({ addItem, updateItem, editingItem, onCancelEdit }) => {
       <h2 className="text-xl mb-4">
         {isEditing ? "Edit Item" : "Create Item"}
       </h2>
+
+      <button
+        type="button"
+        onClick={prefillLandmine}
+        className="mb-4 px-4 py-2 rounded-lg border flex items-center gap-1 border-red-500/40 text-red-300 hover:bg-red-500/10"
+      >
+        <img src={Landmine} alt="Landmine" className="w-4 h-4" /> Landmine
+      </button>
 
       <div className="flex flex-col md:flex-row gap-6">
         <div className="flex flex-col gap-3 flex-1">
@@ -233,16 +270,16 @@ const ItemSelect = ({ addItem, updateItem, editingItem, onCancelEdit }) => {
                 background: item.gradient || "#10132b",
               }}
             >
-              {item.img && !imgError ? (
+              {previewImgSrc && !imgError ? (
                 <img
-                  src={item.img}
+                  src={previewImgSrc}
                   onError={() => setImgError(true)}
                   className="w-20 h-20 object-contain"
                   alt="item preview"
                 />
               ) : (
                 <span className="text-xs text-gray-500">
-                  {item.img ? "Failed to load" : "No image"}
+                  {previewImgSrc ? "Failed to load" : "No image"}
                 </span>
               )}
             </div>

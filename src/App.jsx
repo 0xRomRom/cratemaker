@@ -192,6 +192,7 @@ function App() {
           removeItem={removeItem}
           onEdit={(id) => setEditingId(id)}
           duplicateItem={duplicateItem}
+          crateDetails={crateDetails}
         />
 
         <ItemSelect
