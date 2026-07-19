@@ -1,26 +1,20 @@
-import React, { useState } from "react";
-// All unique colors pulled from the crate data, labeled by rarity/name
+import React, { useEffect, useState } from "react";
+
 const COLOR_OPTIONS = [
-  { name: "Gray (Trash)", value: "#7f7f7f" },
-  { name: "Dark Gray (Trash)", value: "#555555" },
-  { name: "White (Common)", value: "#dddddd" },
-  { name: "Silver (Common)", value: "#d2dae2" },
-  { name: "Pale Blue (Consumer)", value: "#b0c3d9" },
-  { name: "Sky Blue (Uncommon)", value: "#82ccdd" },
-  { name: "Blue (Uncommon)", value: "#35a3f1" },
-  { name: "Steel Blue (Restricted)", value: "#5e98d9" },
-  { name: "Royal Blue (Mil-Spec)", value: "#4b69ff" },
-  { name: "Mint Green (Rare)", value: "#7bed9f" },
-  { name: "Lime Green (Rare)", value: "#a7ec2e" },
-  { name: "Tan (Rare)", value: "#c8a96e" },
-  { name: "Purple (Epic)", value: "#ae6eee" },
-  { name: "Violet (Classified)", value: "#8847ff" },
-  { name: "Pink (Covert)", value: "#d32ce6" },
-  { name: "Orange (Epic)", value: "#e08b2c" },
-  { name: "Orange Red (Epic)", value: "#f15840" },
-  { name: "Red (Epic)", value: "#eb4d4b" },
-  { name: "Gold (Legendary)", value: "#ffdd59" },
+  { name: "Gray", value: "#7f7f7f" },
+  { name: "Dark Gray", value: "#555555" },
+  { name: "Light Gray", value: "#d2dae2" },
+  { name: "White", value: "#dddddd" },
+  { name: "Sky Blue", value: "#82ccdd" },
+  { name: "Blue", value: "#35a3f1" },
+  { name: "Green", value: "#7bed9f" },
+  { name: "Lime Green", value: "#a7ec2e" },
+  { name: "Purple", value: "#ae6eee" },
+  { name: "Crimson", value: "#eb4d4b" },
+  { name: "Bronze", value: "#c8a96e" },
+  { name: "Gold", value: "#ffdd59" },
 ];
+
 const emptyItem = {
   img: "",
   gradient: "",
@@ -30,103 +24,208 @@ const emptyItem = {
   name: "",
 };
 
-const ItemSelect = ({ addItem }) => {
+const ColorDropdown = ({ value, onChange }) => {
+  const [open, setOpen] = useState(false);
+
+  const selected =
+    COLOR_OPTIONS.find((c) => c.value === value) || COLOR_OPTIONS[0];
+
+  return (
+    <div className="relative flex-1">
+      <button
+        type="button"
+        onClick={() => setOpen(!open)}
+        className="w-full bg-[#080a1f] p-2 rounded flex items-center gap-2 text-left"
+      >
+        <span
+          className="w-5 h-5 rounded-full border border-white/20"
+          style={{ backgroundColor: selected.value }}
+        />
+        <span>{selected.name}</span>
+      </button>
+
+      {open && (
+        <div className="absolute z-50 mt-1 w-full bg-[#080a1f] rounded-lg border border-white/10 overflow-hidden shadow-xl max-h-60 overflow-y-auto">
+          {COLOR_OPTIONS.map((c) => (
+            <button
+              key={c.value}
+              type="button"
+              onClick={() => {
+                onChange(c.value);
+                setOpen(false);
+              }}
+              className="w-full px-3 py-2 flex items-center gap-3 hover:bg-white/10 text-left"
+            >
+              <span
+                className="w-5 h-5 rounded-full border border-white/20 shrink-0"
+                style={{ backgroundColor: c.value }}
+              />
+
+              <span>{c.name}</span>
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
+const ItemSelect = ({ addItem, updateItem, editingItem, onCancelEdit }) => {
   const [item, setItem] = useState(emptyItem);
   const [imgError, setImgError] = useState(false);
+
+  useEffect(() => {
+    if (editingItem) {
+      setItem({
+        img: editingItem.img || "",
+        gradient: editingItem.gradient || "",
+        price: String(editingItem.price ?? ""),
+        odds: String(editingItem.odds ?? ""),
+        color: editingItem.color || COLOR_OPTIONS[0].value,
+        name: editingItem.name || "",
+      });
+
+      setImgError(false);
+    }
+  }, [editingItem]);
 
   const handleChange = (field) => (e) => {
     if (field === "img") {
       setImgError(false);
     }
+
     setItem((prev) => ({
       ...prev,
       [field]: e.target.value,
     }));
   };
 
-  const handleAdd = () => {
-    if (!item.name) return;
-    addItem({
-      ...item,
-      price: parseFloat(item.price) || 0,
-      odds: parseFloat(item.odds) || 0,
-      id: crypto.randomUUID(),
-    });
+  const resetForm = () => {
     setItem(emptyItem);
     setImgError(false);
   };
 
+  const handleSubmit = () => {
+    if (!item.name) return;
+
+    const payload = {
+      ...item,
+      price: parseFloat(item.price) || 0,
+      odds: parseFloat(item.odds) || 0,
+    };
+
+    if (editingItem) {
+      updateItem(editingItem.id, payload);
+    } else {
+      addItem({
+        ...payload,
+        id: crypto.randomUUID(),
+      });
+    }
+
+    resetForm();
+  };
+
+  const handleCancel = () => {
+    resetForm();
+    onCancelEdit?.();
+  };
+
   const previewPrice = parseFloat(item.price) || 0;
   const previewOdds = parseFloat(item.odds) || 0;
+  const isEditing = Boolean(editingItem);
 
   return (
-    <div className="bg-[#10132b] rounded-xl p-6 w-full max-w-4xl text-white">
-      <h2 className="text-xl mb-4">Create Items</h2>
+    <div className="bg-[#10132b] rounded-xl p-6 w-full text-white">
+      <h2 className="text-xl mb-4">
+        {isEditing ? "Edit Item" : "Create Item"}
+      </h2>
+
       <div className="flex flex-col md:flex-row gap-6">
-        {/* Form */}
         <div className="flex flex-col gap-3 flex-1">
-          <input
-            placeholder="Image URL"
-            value={item.img}
-            onChange={handleChange("img")}
-            className="bg-[#080a1f] p-2 rounded"
-          />
-          <input
-            placeholder="Gradient (e.g. radial-gradient(circle at top,#7bed9f 25%,transparent 80%))"
-            value={item.gradient}
-            onChange={handleChange("gradient")}
-            className="bg-[#080a1f] p-2 rounded"
-          />
-          <input
-            placeholder="Item name"
-            value={item.name}
-            onChange={handleChange("name")}
-            className="bg-[#080a1f] p-2 rounded"
-          />
-          <div className="flex gap-3 items-center">
-            <label className="shrink-0">Color</label>
-            <select
-              value={item.color}
-              onChange={handleChange("color")}
-              className="bg-[#080a1f] p-2 rounded flex-1"
-            >
-              {COLOR_OPTIONS.map((c) => (
-                <option key={c.value} value={c.value}>
-                  {c.name}
-                </option>
-              ))}
-            </select>
-            <div
-              className="w-6 h-6 rounded-full shrink-0 border border-white/20"
-              style={{ backgroundColor: item.color }}
+          <div className="flex items-center gap-3">
+            <span className="text-[14px] text-[#363c49] whitespace-nowrap">
+              Image URL
+            </span>
+            <input
+              placeholder="Enter image URL"
+              value={item.img}
+              onChange={handleChange("img")}
+              className="bg-[#080a1f] p-2 rounded placeholder:text-[12px] w-full "
             />
           </div>
-          <input
-            type="number"
-            placeholder="Price"
-            value={item.price}
-            onChange={handleChange("price")}
-            className="bg-[#080a1f] p-2 rounded"
-          />
-          <input
-            type="number"
-            placeholder="Odds %"
-            value={item.odds}
-            onChange={handleChange("odds")}
-            className="bg-[#080a1f] p-2 rounded"
-          />
-          <button
-            onClick={handleAdd}
-            disabled={!item.name}
-            className="bg-indigo-600 rounded-lg py-2 hover:bg-indigo-500 disabled:opacity-40 disabled:cursor-not-allowed"
-          >
-            Add Item
-          </button>
+
+          <div className="flex items-center gap-3">
+            <span className="text-[14px] text-[#363c49] whitespace-nowrap">
+              Item Name
+            </span>
+            <input
+              placeholder="Enter item name"
+              value={item.name}
+              onChange={handleChange("name")}
+              className="bg-[#080a1f] p-2 rounded placeholder:text-[12px] w-full"
+            />
+          </div>
+
+          <div className="flex items-center gap-3">
+            <span className="text-[14px] text-[#363c49]">Color</span>
+
+            <ColorDropdown
+              value={item.color}
+              onChange={(color) =>
+                setItem((prev) => ({
+                  ...prev,
+                  color,
+                }))
+              }
+            />
+          </div>
+          <div className="flex items-center gap-3">
+            <span className="text-[14px] text-[#363c49]">Price</span>
+            <input
+              type="number"
+              placeholder="Enter price"
+              value={item.price}
+              onChange={handleChange("price")}
+              className="bg-[#080a1f] p-2 rounded placeholder:text-[12px] w-full"
+            />
+          </div>
+          <div className="flex items-center gap-3">
+            <span className="text-[14px] text-[#363c49] whitespace-nowrap">
+              Odds %
+            </span>
+            <input
+              type="number"
+              placeholder="Enter odds"
+              value={item.odds}
+              onChange={handleChange("odds")}
+              className="bg-[#080a1f] p-2 rounded placeholder:text-[12px] w-full"
+            />
+          </div>
+
+          <div className="flex gap-2">
+            <button
+              onClick={handleSubmit}
+              disabled={!item.name}
+              className="flex-1 bg-indigo-600 rounded-lg py-2 cursor-pointer hover:bg-indigo-500 disabled:opacity-40"
+            >
+              {isEditing ? "Save Changes" : "Add Item"}
+            </button>
+
+            {isEditing && (
+              <button
+                onClick={handleCancel}
+                className="px-4 rounded-lg border border-white/20 hover:bg-white/5"
+              >
+                Cancel
+              </button>
+            )}
+          </div>
         </div>
 
-        {/* Live preview, next to the form */}
         <div className="flex-1 flex flex-col">
           <p className="text-sm text-gray-400 mb-2">Preview</p>
+
           <div className="bg-[#080a1f] rounded-lg p-4 flex flex-col items-center gap-3 flex-1 justify-center">
             <div
               className="w-24 h-24 rounded-lg flex items-center justify-center overflow-hidden"
@@ -142,20 +241,25 @@ const ItemSelect = ({ addItem }) => {
                   alt="item preview"
                 />
               ) : (
-                <span className="text-xs text-gray-500 px-2 text-center">
+                <span className="text-xs text-gray-500">
                   {item.img ? "Failed to load" : "No image"}
                 </span>
               )}
             </div>
+
             <div className="text-center">
               <p>{item.name || "Unnamed item"}</p>
+
               <p className="text-sm text-gray-400">
                 ${previewPrice} • {previewOdds}%
               </p>
             </div>
+
             <div
-              className="w-6 h-6 rounded-full shrink-0 border border-white/20"
-              style={{ backgroundColor: item.color }}
+              className="w-6 h-6 rounded-full border border-white/20"
+              style={{
+                backgroundColor: item.color,
+              }}
             />
           </div>
         </div>

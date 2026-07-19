@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { IoTrashBin } from "react-icons/io5";
 
 const STORAGE_KEY = "crateDetails";
 
@@ -11,11 +12,14 @@ const getRiskColor = (risk) => {
   return "#eb4043";
 };
 
-const CrateHeader = ({ crateDetails, setCrateDetails }) => {
-  const [imagePreview, setImagePreview] = useState(null);
+const CrateHeader = ({
+  crateDetails,
+  setCrateDetails,
+  imagePreview,
+  setImagePreview,
+}) => {
   const [imageError, setImageError] = useState("");
 
-  // Load saved data
   useEffect(() => {
     const saved = localStorage.getItem(STORAGE_KEY);
 
@@ -33,7 +37,6 @@ const CrateHeader = ({ crateDetails, setCrateDetails }) => {
     }
   }, [setCrateDetails]);
 
-  // Save data
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(crateDetails));
 
@@ -88,6 +91,22 @@ const CrateHeader = ({ crateDetails, setCrateDetails }) => {
     reader.readAsDataURL(file);
   };
 
+  // DELETE IMAGE
+  const handleDeleteImage = () => {
+    setImagePreview(null);
+
+    setCrateDetails((prev) => {
+      const updated = { ...prev };
+      delete updated.image;
+
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+
+      return updated;
+    });
+
+    setImageError("");
+  };
+
   const risk = Number(crateDetails.risk) || 0;
 
   return (
@@ -95,13 +114,30 @@ const CrateHeader = ({ crateDetails, setCrateDetails }) => {
       <div className="flex gap-6">
         {/* IMAGE */}
         <div className="flex flex-col items-center gap-4">
-          {imagePreview && (
-            <img
-              src={imagePreview}
-              alt="Crate preview"
-              className="w-48 h-48 object-cover rounded-lg border border-white/10"
-            />
-          )}
+          <div className="relative">
+            <div className="min-w-48 border rounded-md border-[#201b4b] min-h-48">
+              {imagePreview && (
+                <img
+                  src={imagePreview}
+                  alt="Crate preview"
+                  className="w-48 h-48 object-cover rounded-lg border border-white/10"
+                />
+              )}
+            </div>
+            {/* DELETE BUTTON */}
+            {imagePreview && (
+              <button
+                type="button"
+                onClick={handleDeleteImage}
+                className="absolute top-2 right-2 cursor-pointer flex items-center justify-center 
+            w-9 h-9 rounded-full bg-red-600/50 hover:bg-red-500 
+            text-white transition"
+                title="Delete image"
+              >
+                <IoTrashBin size={20} />
+              </button>
+            )}
+          </div>
 
           <div className="flex flex-col gap-2 w-full">
             <input
@@ -111,6 +147,7 @@ const CrateHeader = ({ crateDetails, setCrateDetails }) => {
               onChange={handleImageUpload}
               className="hidden"
             />
+
             <div className="relative mt-4 px-1">
               <div className="relative flex h-2 gap-1">
                 {[
@@ -132,7 +169,6 @@ const CrateHeader = ({ crateDetails, setCrateDetails }) => {
                   );
                 })}
 
-                {/* NEEDLE */}
                 <div
                   className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2"
                   style={{
@@ -155,12 +191,27 @@ const CrateHeader = ({ crateDetails, setCrateDetails }) => {
                 <span>Critical</span>
               </div>
             </div>
-            <label
-              htmlFor="crate-image"
-              className="cursor-pointer flex items-center justify-center mt-3 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-500"
-            >
-              Choose Image
-            </label>
+
+            <div className="flex flex-col gap-1 bg-[#191641] p-2 rounded-md">
+              <span
+                onClick={() => window.open("https://remove.bg", "_blank")}
+                className="cursor-pointer text-yellow-500 text-[12px] border rounded-md p-1 hover:bg-yellow-500/20"
+              >
+                1. Remove Background
+              </span>
+              <span
+                onClick={() => windo9w.open("https://towebp.io/", "_blank")}
+                className="cursor-pointer text-yellow-500 text-[12px] border rounded-md p-1 hover:bg-yellow-500/20"
+              >
+                2. Convert To Webp
+              </span>
+              <label
+                htmlFor="crate-image"
+                className="cursor-pointer flex items-center justify-center mt-1 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-500"
+              >
+                3. Choose Image
+              </label>
+            </div>
 
             {imageError && (
               <span className="text-xs text-red-400">{imageError}</span>
