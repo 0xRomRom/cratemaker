@@ -200,7 +200,7 @@ const CrateHeader = ({
                 1. Remove Background
               </span>
               <span
-                onClick={() => windo9w.open("https://towebp.io/", "_blank")}
+                onClick={() => window.open("https://towebp.io/", "_blank")}
                 className="cursor-pointer text-yellow-500 text-[12px] border rounded-md p-1 hover:bg-yellow-500/20"
               >
                 2. Convert To Webp
